@@ -1,8 +1,8 @@
 #include <Arduino.h>
 
 #include <Wire.h>
-#include "SparkFun_BMP581_Arduino_Library.h"
-#include "SparkFun_BNO08x_Arduino_Library.h" // CTRL+Click here to get the library: http://librarymanager/All#SparkFun_BNO08x
+#include <SparkFun_BMP581_Arduino_Library.h>
+#include <SparkFun_BNO08x_Arduino_Library.h> // CTRL+Click here to get the library: http://librarymanager/All#SparkFun_BNO08x
 
 BMP581 pressureSensor;
 BNO08x bno08x;
@@ -10,7 +10,7 @@ BNO08x bno08x;
 uint8_t i2cAddress = BMP581_I2C_ADDR;
 
 // Constants
-const float g = 9.81;  // Gravitational acceleration (m/s^2). IMU should already account for this. !!! check
+const float g = 9.81;  // Gravitational accelerationear (m/s^2). IMU should already account for this. !!! check
 const float Cd = 0.75; // Drag coefficient (assumed constant)
 const float A = 0.01;  // Cross-sectional area of the rocket (m^2)
 const float m = 1.0;   // Mass of the rocket (kg)
