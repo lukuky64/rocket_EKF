@@ -9,11 +9,11 @@ BNO08x bno08x;
 uint8_t i2cAddress = BMP581_I2C_ADDR;
 
 // Constants
-const float g = 9.80665; // Gravitational acceleration (m/s^2)
-const float Cd = 0.75;   // Drag coefficient
-const float A = 0.01;    // Cross-sectional area (m^2)
-const float m = 1.0;     // Mass of the rocket (kg)
-const float dt = 0.01;   // Time step (s)
+const float g = 9.81;  // Gravitational acceleration (m/s^2)
+const float Cd = 0.5;  // Drag coefficient
+const float A = 0.02;  // Cross-sectional area (m^2)
+const float m = 20.0;  // Mass of the rocket (kg)
+const float dt = 0.01; // Time step (s)
 
 // Air density as a function of altitude
 float airDensity(float altitude)
@@ -51,17 +51,18 @@ public:
     x[0] = 0.0; // Initial altitude
     x[1] = 0.0; // Initial velocity
 
-    P[0][0] = 1.0;
+    P[0][0] = 1.0; // altitude variance. Setting this low because we know the initial altitude
     P[0][1] = 0.0;
     P[1][0] = 0.0;
-    P[1][1] = 1.0;
+    P[1][1] = 1.0; // velocity variance. Setting this low because we know the initial altitude
 
-    Q[0][0] = 0.1;
+    Q[0][0] = 0.01; // should reflect how much we trust the model to estimate altitude. Smaller Q means we trust the model more
     Q[0][1] = 0.0;
     Q[1][0] = 0.0;
-    Q[1][1] = 0.1;
+    Q[1][1] = 0.01; // should reflect how much we trust the model to estimate velocity. Smaller Q means we trust the model more
 
-    R = 0.5; // Measurement noise covariance
+    R = 25; // Measurement noise covariance. Should be tuned based on barometer variance. Smaller R means we trust the sensor more
+    // 0.5 is probably accuracy but im going to increase it because there are stages in flight where barometer will give weird readings.
   }
 
   void predict(float a_total)
@@ -167,13 +168,13 @@ void initializeSensors()
   Serial.println("BMP581 found!");
 
   // Initialize IMU
-  if (!bno08x.begin())
+  if (!bno08x.begin(BNO08X_I2C_ADDR, Wire, -1, BNO08X_NRST))
   {
     Serial.println("Error: BNO08x not connected, check wiring!");
     while (1)
       ;
   }
-  bno08x.enableAccelerometer(100); // Enable accelerometer at 100Hz
+  bno08x.enableAccelerometer(10); // Enable accelerometer at 100Hz
   Serial.println("BNO08x found!");
 }
 
@@ -213,8 +214,10 @@ bool getAccelerometerMeasurement(float &a_meas)
 void setup()
 {
   Serial.begin(115200);
-  Wire.begin();
-  Wire.setClock(400000);
+  delay(500);
+  Serial.println("Rocket Altitude Estimation");
+  Wire.begin(I2C_SDA, I2C_SCL);
+  Wire.setClock(100000);
 
   initializeSensors();
 }
@@ -241,7 +244,7 @@ void loop()
     }
 
     // Correct accelerometer measurement for gravity
-    float a_actual = a_meas + g;
+    float a_actual = a_meas - g; //                       !!! this might need to be minus
 
     // Compute drag acceleration
     float a_drag = dragAcceleration(ekf.x[1], ekf.x[0]);
